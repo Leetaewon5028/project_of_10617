@@ -33,6 +33,7 @@ public class Boss : Enemy
     int dodgeCount;
     [SerializeField] float dodgeBackDistance = 3f;
     [SerializeField] float dodgeDuration = 0.4f;
+    [SerializeField] float arenaHalfWidth = 9.5f;
 
     [SerializeField] Slider bossbar;
     Animator animator;
@@ -75,8 +76,12 @@ public class Boss : Enemy
     {
         animator.SetTrigger("Miss");
 
+        // Clamp instead of just teleporting: an unclamped jump can shove the
+        // boss past the arena's boundary walls, leaving it stuck outside
+        // since it moves purely via Translate (walls don't block that).
         float away = player.transform.position.x > transform.position.x ? -1 : 1;
-        transform.position += new Vector3(away * dodgeBackDistance, 0, 0);
+        float targetX = Mathf.Clamp(transform.position.x + away * dodgeBackDistance, -arenaHalfWidth, arenaHalfWidth);
+        transform.position = new Vector3(targetX, transform.position.y, transform.position.z);
         retreatTimer = dodgeDuration;
     }
 

@@ -82,9 +82,13 @@ public class PlayerBattle : MonoBehaviour
             RectTransform rt = krFill.rectTransform;
             // Read the slider's actual fill edge back (rather than recomputing
             // trueRatio's position independently) so there's no seam/gap from
-            // the Slider's own internal fill-rect padding.
+            // the Slider's own internal fill-rect padding. KR Fill sits behind
+            // Fill in the hierarchy, so nudging it slightly under Fill's edge
+            // is invisible and guarantees no background (red) sliver peeks
+            // through between the two, regardless of the Fill rect's own inset.
             float yellowEdge = healthbar.fillRect != null ? healthbar.fillRect.anchorMax.x : trueRatio;
-            rt.anchorMin = new Vector2(yellowEdge, 0f);
+            const float seamOverlap = 0.01f;
+            rt.anchorMin = new Vector2(Mathf.Max(0f, yellowEdge - seamOverlap), 0f);
             rt.anchorMax = new Vector2(karmaRatio, 1f);
         }
         if (atkCool > 0)

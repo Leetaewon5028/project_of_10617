@@ -2,19 +2,12 @@ using UnityEngine;
 
 // Added to the player at runtime by Boss when it first casts gravity
 // manipulation. Launches the player in a fixed direction (on top of, not
-// instead of, their normal control), rings them with a blue outline while
-// active, and stops the launch on wall contact.
+// instead of, their normal control), tints them blue while active, and
+// stops the launch when it actually slams into something (not just any
+// incidental contact with the ground layer they may already be standing on).
 public class PlayerGravityStatus : MonoBehaviour
 {
-    static readonly Vector2[] OutlineOffsets =
-    {
-        Vector2.up, Vector2.down, Vector2.left, Vector2.right,
-        new Vector2(1, 1).normalized, new Vector2(1, -1).normalized,
-        new Vector2(-1, 1).normalized, new Vector2(-1, -1).normalized,
-    };
-
-    [SerializeField] Color outlineColor = new Color(0.2f, 0.5f, 1f, 1f);
-    [SerializeField] float outlineThickness = 0.12f;
+    [SerializeField] Color tintColor = new Color(0.2f, 0.5f, 1f, 1f);
 
     // Added at runtime (never present in the scene file), so there is no
     // Inspector to configure this in - resolve the ground/wall layer by name
@@ -23,7 +16,7 @@ public class PlayerGravityStatus : MonoBehaviour
 
     Rigidbody2D rigid;
     SpriteRenderer sprite;
-    SpriteRenderer[] outlineRenderers;
+    Color originalColor;
 
     public bool IsActive { get; private set; }
 
@@ -31,40 +24,14 @@ public class PlayerGravityStatus : MonoBehaviour
     {
         rigid = GetComponent<Rigidbody2D>();
         sprite = GetComponent<SpriteRenderer>();
+        originalColor = sprite.color;
         wallMask = LayerMask.GetMask("ground");
-
-        outlineRenderers = new SpriteRenderer[OutlineOffsets.Length];
-        for (int i = 0; i < OutlineOffsets.Length; i++)
-        {
-            GameObject outlineObj = new GameObject("GravityOutline_" + i);
-            outlineObj.transform.SetParent(transform, false);
-            outlineObj.transform.localPosition = OutlineOffsets[i] * outlineThickness;
-
-            SpriteRenderer renderer = outlineObj.AddComponent<SpriteRenderer>();
-            renderer.color = outlineColor;
-            renderer.sortingLayerID = sprite.sortingLayerID;
-            renderer.sortingOrder = sprite.sortingOrder - 1;
-            renderer.enabled = false;
-            outlineRenderers[i] = renderer;
-        }
-    }
-
-    void Update()
-    {
-        if (!IsActive)
-            return;
-
-        foreach (var renderer in outlineRenderers)
-        {
-            renderer.sprite = sprite.sprite;
-            renderer.flipX = sprite.flipX;
-        }
     }
 
     public void ApplyGravityLaunch(Vector2 direction, float speed)
     {
         IsActive = true;
-        SetOutlineEnabled(true);
+        sprite.color = tintColor;
         rigid.linearVelocity = direction.normalized * speed;
     }
 
@@ -73,20 +40,34 @@ public class PlayerGravityStatus : MonoBehaviour
         if (!IsActive)
             return;
 
-        if (((1 << collision.gameObject.layer) & wallMask.value) != 0)
-            EndGravityLaunch();
+        if (((1 << collision.gameObject.layer) & wallMask.value) == 0)
+            return;
+
+        // The player is often already touching the ground layer when the
+        // launch starts (a sideways launch slides right along the floor
+        // they're standing on), so any contact with that layer isn't
+        // necessarily a block. Only end the launch when the pre-collision
+        // relative velocity actually drives into the surface (opposes its
+        // normal) rather than sliding tangentially along it.
+        Vector2 velocity = collision.relativeVelocity;
+        if (velocity.sqrMagnitude < 0.0001f)
+            return;
+
+        Vector2 velocityDir = velocity.normalized;
+        foreach (ContactPoint2D contact in collision.contacts)
+        {
+            if (Vector2.Dot(velocityDir, contact.normal) < -0.3f)
+            {
+                EndGravityLaunch();
+                return;
+            }
+        }
     }
 
     void EndGravityLaunch()
     {
         IsActive = false;
-        SetOutlineEnabled(false);
+        sprite.color = originalColor;
         rigid.linearVelocity = Vector2.zero;
-    }
-
-    void SetOutlineEnabled(bool value)
-    {
-        foreach (var renderer in outlineRenderers)
-            renderer.enabled = value;
     }
 }
