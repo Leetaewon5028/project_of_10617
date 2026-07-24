@@ -22,8 +22,6 @@ public class EntityHealth : MonoBehaviour
     List<Action<Context>> onGiveDamageEv = new();
     List<Action<Context>> onDeathEv = new();
 
-    // Returning true fully blocks the incoming hit (no health loss, no onDamage
-    // events) before crit/defense math ever runs - used by Boss's dodge (Miss).
     public delegate bool DamageInterceptor(float incomingDamage, EntityHealth attacker);
     List<DamageInterceptor> damageInterceptors = new();
 
@@ -57,10 +55,6 @@ public class EntityHealth : MonoBehaviour
     {
         onDeathEv.Add(action);
     }
-
-    // For damage-over-time sources (like karma ticks) that apply health loss
-    // directly instead of going through GetDamage's attacker/crit/defense
-    // pipeline, but still need to trigger death consistently.
     public void ReduceHealth(float amount)
     {
         if (isDeath)

@@ -57,10 +57,6 @@ public class PlayerBattle : MonoBehaviour
     }
 
     void Update(){
-        // KARMA: each stack drains 1 HP every karmaSecondsPerStack seconds, so
-        // the combined tick interval shrinks as karma stacks up (and stretches
-        // back out as it depletes), giving a fast-then-tapering drain instead
-        // of a flat rate.
         if (karma > 0)
         {
             karmaTickTimer += Time.deltaTime;
@@ -83,12 +79,6 @@ public class PlayerBattle : MonoBehaviour
         {
             float karmaRatio = Mathf.Min(1f, (health.health + karma) / health.maxHealth);
             RectTransform rt = krFill.rectTransform;
-            // Read the slider's actual fill edge back (rather than recomputing
-            // trueRatio's position independently) so there's no seam/gap from
-            // the Slider's own internal fill-rect padding. KR Fill sits behind
-            // Fill in the hierarchy, so nudging it slightly under Fill's edge
-            // is invisible and guarantees no background (red) sliver peeks
-            // through between the two, regardless of the Fill rect's own inset.
             float yellowEdge = healthbar.fillRect != null ? healthbar.fillRect.anchorMax.x : trueRatio;
             const float seamOverlap = 0.01f;
             rt.anchorMin = new Vector2(Mathf.Max(0f, yellowEdge - seamOverlap), 0f);

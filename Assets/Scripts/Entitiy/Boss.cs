@@ -54,8 +54,6 @@ public class Boss : Enemy
         gravityTimer = gravityCooldown;
     }
 
-    // Sans-style dodge: the first `maxDodges` hits are evaded outright, the
-    // one after that is guaranteed lethal regardless of remaining health.
     bool OnIncomingHit(float incomingDamage, EntityHealth attacker)
     {
         if (dodgeCount < maxDodges)
@@ -79,9 +77,6 @@ public class Boss : Enemy
     {
         animator.SetTrigger("Miss");
 
-        // Clamp instead of just teleporting: an unclamped jump can shove the
-        // boss past the arena's boundary walls, leaving it stuck outside
-        // since it moves purely via Translate (walls don't block that).
         float away = player.transform.position.x > transform.position.x ? -1 : 1;
         float targetX = Mathf.Clamp(transform.position.x + away * dodgeBackDistance, -arenaHalfWidth, arenaHalfWidth);
         transform.position = new Vector3(targetX, transform.position.y, transform.position.z);
@@ -129,10 +124,6 @@ public class Boss : Enemy
         SetFacing(player.transform.position.x > transform.position.x ? 1 : -1);
         animator.SetBool("isMoving", moving);
     }
-
-    // Replaces the old punch: still lands the same melee hitbox, but instead
-    // of a plain damage hit it flips gravity on the player, launching them
-    // upward or off in whichever direction Sans is currently facing.
     void GravityManipulation()
     {
         Attack(0.5f, defaultAttack, transform.position);
@@ -149,18 +140,12 @@ public class Boss : Enemy
 
         float facing = player.transform.position.x > transform.position.x ? 1 : -1;
 
-        // Spawn it well clear of Sans's own sprite so the two don't overlap
-        // and the beam reads as coming from a separate object, clamped so it
-        // can't land outside the arena walls if Sans is near an edge.
         float spawnX = Mathf.Clamp(transform.position.x + facing * blasterSpawnDistance, -arenaHalfWidth, arenaHalfWidth);
 
         Vector2 spawnPos = blasterSpawnPoint != null
             ? (Vector2)blasterSpawnPoint.position
             : new Vector2(spawnX, transform.position.y);
 
-        // Hand it the player's Transform (not a one-shot direction) so it can
-        // keep tracking them for the whole charge-up instead of committing to
-        // wherever they were the instant it spawned.
         GasterBlaster blaster = Instantiate(blasterPrefab, spawnPos, Quaternion.identity);
         blaster.Init(player.transform, stat.GetResultValue("attackDamage"), health, enemyMask);
     }
