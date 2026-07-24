@@ -704,6 +704,7 @@ MonoBehaviour:
   dodgeBackDistance: 3
   dodgeDuration: 0.4
   bossbar: {fileID: 1147242102}
+  bossbarFill: {fileID: 1600775350}
 --- !u!95 &534865758
 Animator:
   serializedVersion: 7

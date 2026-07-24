@@ -31,6 +31,7 @@ public class Boss : Enemy
     [SerializeField] float arenaHalfWidth = 9.5f;
 
     [SerializeField] Slider bossbar;
+    [SerializeField] Image bossbarFill;
     Animator animator;
     PlayerGravityStatus playerGravity;
 
@@ -44,6 +45,7 @@ public class Boss : Enemy
         base.Start();
 
         health.AddDamageInterceptor(OnIncomingHit);
+        health.OnDeath(OnDeath);
 
         playerGravity = player.GetComponent<PlayerGravityStatus>();
         if (playerGravity == null)
@@ -65,6 +67,12 @@ public class Boss : Enemy
 
         health.ReduceHealth(health.health);
         return true;
+    }
+
+    void OnDeath(EntityHealth.Context ctx)
+    {
+        if (bossbarFill != null)
+            bossbarFill.color = Color.red;
     }
 
     void Dodge()
